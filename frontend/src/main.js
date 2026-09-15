@@ -9,13 +9,14 @@ import { createToolManager } from './tool/toolManager.js'
 import { createMapLayers } from './map/layerFactory.js'
 
 const vietnamCenter = fromLonLat([106.2, 16.2])
+const defaultZoom = 5.3
 const catalogLayers = createMapLayers()
 
 const map = new Map({
   target: 'map',
   controls: [],
   layers: catalogLayers.mapLayers,
-  view: new View({ center: vietnamCenter, zoom: 5.3, minZoom: 3, maxZoom: 19 }),
+  view: new View({ center: vietnamCenter, zoom: defaultZoom, minZoom: 3, maxZoom: 19 }),
 })
 
 // Các công cụ cơ bản được để trong thư mục tool để có thể mở rộng dần.
@@ -40,7 +41,9 @@ document.querySelectorAll('[data-section]').forEach((button) => {
 
 document.querySelectorAll('[data-action]').forEach((button) => {
   button.addEventListener('click', () => {
-    if (button.dataset.action === 'home') map.getView().animate({ center: vietnamCenter, zoom: 5.3, duration: 500 })
+    if (button.dataset.action === 'zoom-in') map.getView().animate({ zoom: map.getView().getZoom() + 1, duration: 200 })
+    if (button.dataset.action === 'zoom-out') map.getView().animate({ zoom: map.getView().getZoom() - 1, duration: 200 })
+    if (button.dataset.action === 'home') map.getView().animate({ center: vietnamCenter, zoom: defaultZoom, duration: 500 })
     if (button.dataset.action === 'fullscreen') document.querySelector('.map-panel').requestFullscreen?.()
     if (button.dataset.action === 'guide') showMessage('Hướng dẫn', 'Kéo bản đồ để di chuyển và dùng chuột cuộn để phóng to hoặc thu nhỏ.')
     if (button.dataset.action === 'account') showMessage('Tài khoản học viên', 'Chức năng đăng nhập sẽ được kết nối với backend sau.')

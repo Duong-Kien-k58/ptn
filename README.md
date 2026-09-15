@@ -71,5 +71,5 @@ Mở địa chỉ Vite hiển thị trong terminal, thông thường là `http:/
 ## Trạng thái lộ trình
 
 - Hoàn thành: Giai đoạn 1 — Nền tảng.
-- Đang hoàn thiện: Giai đoạn 2 — Giao diện PTN và bản đồ OpenLayers.
+- Hoàn thành: Giai đoạn 2 — Giao diện PTN và bản đồ OpenLayers.
 - Tiếp theo: Giai đoạn 3 — PostGIS, GeoServer và Docker.

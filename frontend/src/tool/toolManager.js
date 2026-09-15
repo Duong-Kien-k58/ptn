@@ -1,6 +1,7 @@
 import { createGeolocationTool } from './geolocationTool.js'
 import { createIdentifyTool } from './identifyTool.js'
 import { createLayerCatalogTool } from './layerCatalogTool.js'
+import { createLegendTool } from './legendTool.js'
 import { createMeasureTool } from './measureTool.js'
 import { createPrintTool } from './printTool.js'
 import { createSearchTool } from './searchTool.js'
@@ -16,6 +17,7 @@ export function createToolManager({ map, catalogLayers }) {
       measureLayer: measure.layer,
       locationLayer: location.layer,
     }),
+    legend: createLegendTool(),
     measure,
     search: createSearchTool(map),
     identify: createIdentifyTool(map),

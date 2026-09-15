@@ -419,7 +419,7 @@ button {
   min-height: 32px;
   padding: 0 7px;
   background: #19313e;
-  cursor: grab;
+  cursor: pointer;
   user-select: none;
 }
 
@@ -436,6 +436,7 @@ button {
   width: auto;
   margin: 0;
   accent-color: #55d6c5;
+  cursor: default;
 }
 
 .toc-group-children {
@@ -451,7 +452,7 @@ button {
   padding: 0 6px;
   border-radius: 3px;
   color: #d9e7e8;
-  cursor: grab;
+  cursor: pointer;
   font-size: 11px;
 }
 

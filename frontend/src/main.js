@@ -6,7 +6,7 @@ import View from 'ol/View.js'
 import { fromLonLat } from 'ol/proj.js'
 import { createBasicTools } from './tool/basicTools.js'
 import { createToolManager } from './tool/toolManager.js'
-import { createMapLayers } from './map/layerFactory.js'
+import { createMapLayers } from './config/layers.js'
 
 const vietnamCenter = fromLonLat([106.2, 16.2])
 const defaultZoom = 5.3

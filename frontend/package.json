@@ -1,0 +1,18 @@
+{
+  "name": "ptn-webgis-frontend",
+  "version": "0.1.0",
+  "description": "Giao diện bản đồ cho hệ thống thực hành PTN WebGIS.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "ol": "^10.10.0"
+  }
+}

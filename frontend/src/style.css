@@ -1,0 +1,612 @@
+/* =========================================================
+   1. BIẾN GIAO DIỆN VÀ THIẾT LẬP CHUNG
+   ========================================================= */
+:root {
+  font-family: Arial, sans-serif;
+  color: #dbe7ec;
+  background: #0b1220;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* =========================================================
+   2. KHUNG ỨNG DỤNG VÀ HEADER
+   ========================================================= */
+.app {
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr);
+  height: 100svh;
+  min-height: 500px;
+  background: #0b1220;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid #29384a;
+  background: #111b2c;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f1f7f8;
+  text-decoration: none;
+}
+
+.brand > b {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #44c7b8;
+  border-radius: 7px;
+  color: #68e4d2;
+  background: #12363c;
+  font-size: 11px;
+}
+
+.brand strong,
+.user strong {
+  display: block;
+  font-size: 14px;
+}
+
+.brand small,
+.user small {
+  display: block;
+  margin-top: 2px;
+  color: #8da4af;
+  font-size: 10px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.header-actions > button {
+  border: 0;
+  color: #dce8ed;
+  background: transparent;
+}
+
+.header-actions > button:hover {
+  color: #70e7d6;
+}
+
+.header-actions > button:first-child {
+  font-size: 12px;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.user i {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 50%;
+  color: #10252b;
+  background: #67d5c6;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: bold;
+}
+
+/* =========================================================
+   3. BỐ CỤC BẢN ĐỒ, MENU VÀ THANH CÔNG CỤ
+   ========================================================= */
+.map-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 54px;
+  min-height: 0;
+}
+
+.map-panel {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: #1d3440;
+}
+
+.map-panel:fullscreen {
+  background: #1d3440;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+.right-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 21px 10px 15px;
+  border-right: 1px solid #29384a;
+  background: #111b2c;
+}
+
+.right-menu > p {
+  margin: 0 10px 12px;
+  color: #748b9a;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.right-menu nav {
+  display: grid;
+  gap: 5px;
+}
+
+.right-menu nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 43px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #aebfc7;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+}
+
+.right-menu nav button:hover {
+  color: #e6f4f4;
+  background: #1d2d3f;
+}
+
+.right-menu nav button.active {
+  border-color: #33746e;
+  color: #6ce1d1;
+  background: #153b40;
+}
+
+.right-menu > small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: auto 9px 0;
+  padding-top: 13px;
+  border-top: 1px solid #29394a;
+  color: #7e96a2;
+  font-size: 10px;
+}
+
+.right-menu > small i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #49d69c;
+}
+
+.tool-bar {
+  display: flex;
+  z-index: 2;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 14px;
+  border-left: 1px solid #29384a;
+  background: #111b2c;
+}
+
+.tool-bar button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #35495d;
+  border-radius: 5px;
+  color: #a9d7d3;
+  background: #17283a;
+  font-size: 18px;
+}
+
+.tool-bar button:hover {
+  border-color: #48bfb3;
+  color: #75ebda;
+  background: #1a3b43;
+}
+
+.tool-bar button.active {
+  border-color: #5ce2d0;
+  color: #9ffff0;
+  background: #215a5c;
+}
+
+/* =========================================================
+   4. PANEL CÔNG CỤ
+   ========================================================= */
+.tool-panel {
+  position: absolute;
+  z-index: 8;
+  top: 18px;
+  right: 18px;
+  display: none;
+  width: 285px;
+  overflow: hidden;
+  border: 1px solid #3b6570;
+  border-radius: 7px;
+  color: #dce9eb;
+  background: #142637f5;
+  box-shadow: 0 8px 24px #00000080;
+}
+
+.tool-panel.shown {
+  display: block;
+}
+
+.tool-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  color: #75e2d4;
+  background: #173744;
+  cursor: move;
+  font-size: 12px;
+}
+
+.tool-panel-header button {
+  border: 0;
+  color: #bdd1d4;
+  background: transparent;
+  font-size: 19px;
+}
+
+.tool-panel-body,
+.tool-panel-body form {
+  display: grid;
+  gap: 9px;
+}
+
+.tool-panel-body {
+  padding: 12px;
+  font-size: 12px;
+}
+
+.tool-panel-body button {
+  min-height: 32px;
+  border: 1px solid #397a76;
+  border-radius: 4px;
+  color: #dcf6f2;
+  background: #1c5454;
+}
+
+.tool-panel-body button:hover {
+  background: #27716c;
+}
+
+.tool-panel-body button.secondary {
+  border-color: #4d6370;
+  color: #c5d2d6;
+  background: #243745;
+}
+
+.tool-panel-body label {
+  display: grid;
+  gap: 5px;
+  color: #c2d5d7;
+}
+
+.tool-panel-body input,
+.tool-panel-body select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #45616d;
+  border-radius: 4px;
+  outline: 0;
+  color: #e7f1f2;
+  background: #0f202d;
+}
+
+.tool-option {
+  display: block !important;
+  margin: 7px 0;
+  color: #dbe8e8 !important;
+}
+
+.tool-option input {
+  width: auto;
+  margin: 0 5px 0 0;
+}
+
+.tool-panel-body hr {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid #34515d;
+}
+
+.tool-panel-body small,
+.tool-hint {
+  color: #91abb0;
+  font-size: 11px;
+}
+
+.tool-hint {
+  margin: 0;
+  line-height: 16px;
+}
+
+.tool-result {
+  padding: 8px;
+  border-radius: 4px;
+  color: #c9dddd;
+  background: #0f202d;
+  line-height: 18px;
+}
+
+/* Catalog nhóm/layer giống LapTrinhGis. */
+.toc-group {
+  margin-top: 7px;
+  overflow: hidden;
+  border: 1px solid #34515d;
+  border-radius: 4px;
+}
+
+.toc-group-header {
+  display: grid;
+  grid-template-columns: 24px 22px 1fr;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 7px;
+  background: #19313e;
+}
+
+.toc-group-header button {
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  color: #8de4d8;
+  background: transparent;
+}
+
+.toc-group-header input,
+.toc-layer-row input {
+  width: auto;
+  margin: 0;
+  accent-color: #55d6c5;
+}
+
+.toc-group-children {
+  padding: 3px;
+  background: #10232e;
+}
+
+.toc-layer-row {
+  display: grid;
+  grid-template-columns: 21px 1fr;
+  align-items: center;
+  min-height: 29px;
+  padding: 0 6px;
+  border-radius: 3px;
+  color: #d9e7e8;
+  cursor: grab;
+  font-size: 11px;
+}
+
+.toc-layer-row:hover {
+  background: #1d414d;
+}
+
+.toc-layer-row.toc-drop-target {
+  outline: 1px dashed #66ead8;
+  background: #1d5458;
+}
+
+.measure-tooltip {
+  padding: 4px 7px;
+  border: 1px solid #4be0cb;
+  border-radius: 3px;
+  color: #eafcf9;
+  background: #102c34e8;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* =========================================================
+   5. THÔNG BÁO VÀ TỌA ĐỘ CHUỘT
+   ========================================================= */
+.mouse-position {
+  position: absolute;
+  z-index: 5;
+  bottom: 10px;
+  right: 10px;
+  padding: 4px 7px;
+  border-radius: 3px;
+  color: #d4e8e7;
+  background: #0d1724dc;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.mouse-position .ol-mouse-position {
+  /* Không cho OpenLayers tự định vị lần nữa. */
+  position: static;
+}
+
+.message {
+  position: fixed;
+  z-index: 10;
+  right: 70px;
+  bottom: 16px;
+  display: none;
+  width: 265px;
+  padding: 12px 36px 12px 13px;
+  border: 1px solid #3b706e;
+  border-radius: 6px;
+  background: #142b36;
+  box-shadow: 0 5px 18px #00000075;
+}
+
+.message.show {
+  display: block;
+}
+
+.message strong,
+.message span {
+  display: block;
+}
+
+.message strong {
+  color: #73dfd2;
+  font-size: 12px;
+}
+
+.message span {
+  margin-top: 4px;
+  color: #b2c5ca;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.message button {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  border: 0;
+  color: #a1b4ba;
+  background: transparent;
+  font-size: 19px;
+}
+
+/* =========================================================
+   6. OPENLAYERS CONTROLS
+   Các control đặt ở những góc khác nhau để không chồng lấn.
+   ========================================================= */
+.ol-zoom {
+  top: 14px;
+  right: 14px;
+  bottom: auto;
+  left: auto;
+}
+
+.ol-zoom .ol-zoom-in,
+.ol-zoom .ol-zoom-out,
+.ol-full-screen,
+.ol-zoom-extent {
+  border: 1px solid #3b586a;
+  border-radius: 4px;
+  color: #cce9e7;
+  background: #142637e8;
+  box-shadow: 0 2px 7px #00000050;
+}
+
+.ol-zoom button {
+  font-size: 19px;
+}
+
+.ol-full-screen {
+  top: 93px;
+  right: 14px;
+}
+
+.ol-zoom-extent {
+  top: 135px;
+  right: 14px;
+  left: auto;
+}
+
+.ol-scale-line,
+.ol-scale-bar {
+  right: auto;
+  bottom: 38px;
+  left: 10px;
+  background: #0d1724dc;
+}
+
+.ol-scale-line-inner,
+.ol-scale-bar-inner {
+  border-color: #d5ebea;
+  color: #d5ebea;
+}
+
+.ol-overviewmap {
+  top: auto;
+  right: 10px;
+  bottom: 38px;
+  left: auto;
+}
+
+.ol-overviewmap .ol-overviewmap-map {
+  border: 2px solid #304f60;
+}
+
+.ol-overviewmap .ol-overviewmap-box {
+  border-color: #56d2c3;
+}
+
+/* =========================================================
+   7. MÀN HÌNH NHỎ
+   ========================================================= */
+@media (max-width: 700px) {
+  .header {
+    padding: 0 14px;
+  }
+
+  .brand small,
+  .header-actions > button:first-child,
+  .user span {
+    display: none;
+  }
+
+  .map-layout {
+    grid-template-columns: 52px minmax(0, 1fr) 48px;
+  }
+
+  .right-menu {
+    padding: 13px 8px;
+  }
+
+  .right-menu > p,
+  .right-menu nav span,
+  .right-menu > small {
+    display: none;
+  }
+
+  .right-menu nav button {
+    justify-content: center;
+    padding: 0;
+    font-size: 18px;
+  }
+
+  .tool-panel {
+    top: 10px;
+    right: 10px;
+    width: min(285px, calc(100vw - 78px));
+  }
+
+  .ol-overviewmap {
+    display: none;
+  }
+}

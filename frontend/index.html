@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101827" />
+    <title>PTN WebGIS</title>
+  </head>
+  <body>
+    <!-- HTML chỉ định nghĩa bố cục cơ bản của giao diện. -->
+    <div class="app">
+      <header class="header">
+        <a class="brand" href="#map"><b>PTN</b><span><strong>PTN WebGIS</strong><small>Hệ thống thực hành GIS</small></span></a>
+        <div class="header-actions">
+          <button data-action="guide">Hướng dẫn</button>
+          <button class="user" data-action="account"><i>HV</i><span><strong>Học viên</strong><small>Chưa đăng nhập</small></span></button>
+        </div>
+      </header>
+
+      <main class="map-layout">
+        <!-- Menu chức năng ở bên trái. -->
+        <aside class="right-menu">
+          <p>CHỨC NĂNG</p>
+          <nav>
+            <button class="active" data-section="map">⌖ <span>Không gian bản đồ</span></button>
+            <button data-section="data">▣ <span>Quản trị dữ liệu không gian</span></button>
+            <button data-section="vector">◇ <span>Hiển thị vector</span></button>
+            <button data-section="raster">▧ <span>Hiển thị raster</span></button>
+            <button data-section="settings">⚙ <span>Cấu hình và quản trị</span></button>
+            <button data-section="support">? <span>Hỗ trợ</span></button>
+          </nav>
+          <small><i></i>Bản đồ nền sẵn sàng</small>
+        </aside>
+
+        <section class="map-panel">
+          <div id="map" aria-label="Bản đồ nền OpenStreetMap"></div>
+          <div id="mouse-position" class="mouse-position"></div>
+          <div id="tool-panels" aria-live="polite"></div>
+        </section>
+
+        <!-- Thanh công cụ hẹp bên phải, không chiếm diện tích bản đồ. -->
+        <aside class="tool-bar" aria-label="Công cụ bản đồ">
+          <button data-action="home" title="Về phạm vi Việt Nam">⌂</button>
+          <button data-tool-action="layers" title="Danh sách lớp">▤</button>
+          <button data-tool-action="measure" title="Đo đạc">╱</button>
+          <button data-tool-action="search" title="Tìm kiếm">⌕</button>
+          <button data-tool-action="identify" title="Tra cứu thông tin">ⓘ</button>
+          <button data-tool-action="locate" title="Vị trí hiện tại">◎</button>
+          <button data-tool-action="print" title="In bản đồ">▣</button>
+          <button data-action="fullscreen" title="Toàn màn hình">⛶</button>
+        </aside>
+      </main>
+
+      <section class="message" aria-live="polite">
+        <strong id="message-title">PTN WebGIS</strong>
+        <span id="message-text">Chọn một chức năng để tiếp tục.</span>
+        <button data-action="close-message" aria-label="Đóng">×</button>
+      </section>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

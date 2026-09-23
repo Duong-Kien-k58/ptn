@@ -1,4 +1,5 @@
 import { createToolPanel } from './toolUtils.js'
+import { transformExtent } from 'ol/proj.js'
 
 const STORAGE_KEY = 'ptn_layer_catalog_v4'
 
@@ -18,6 +19,32 @@ function getSavedState() {
   } catch {
     return {}
   }
+}
+
+function childByName(element, name) {
+  return Array.from(element.children).find((child) => child.localName === name)
+}
+
+function childNumber(element, name) {
+  return Number(childByName(element, name)?.textContent)
+}
+
+function getGeographicExtent(capabilities, layerName) {
+  const shortLayerName = layerName.split(':').at(-1)
+  const layer = Array.from(capabilities.getElementsByTagName('*')).find((element) => (
+    element.localName === 'Layer'
+      && [layerName, shortLayerName].includes(childByName(element, 'Name')?.textContent)
+  ))
+  const bounds = layer && childByName(layer, 'EX_GeographicBoundingBox')
+  if (!bounds) return null
+
+  const extent = [
+    childNumber(bounds, 'westBoundLongitude'),
+    childNumber(bounds, 'southBoundLatitude'),
+    childNumber(bounds, 'eastBoundLongitude'),
+    childNumber(bounds, 'northBoundLatitude'),
+  ]
+  return extent.every(Number.isFinite) ? extent : null
 }
 
 // Catalog hoạt động như LapTrinhGis: chọn dòng để đánh dấu lớp, checkbox để
@@ -46,6 +73,7 @@ export function createLayerCatalogTool({ map, baseGroup, thematicGroups, rasterG
   const content = panel.querySelector('.catalog-content')
   let selectedLayer = null
   let dragged = null
+  const capabilitiesCache = new Map()
 
   function clearDropTargets() {
     panel.querySelectorAll('.toc-drop-target').forEach((element) => element.classList.remove('toc-drop-target'))
@@ -53,6 +81,47 @@ export function createLayerCatalogTool({ map, baseGroup, thematicGroups, rasterG
 
   function isBaseLayer(layer) {
     return layer.get('layerKind') === 'base'
+  }
+
+  async function getWmsExtent(layer) {
+    const source = layer.getSource()
+    const layerName = source?.getParams?.().LAYERS
+    const sourceUrl = source?.getUrls?.()[0]
+    if (!layerName || !sourceUrl) return null
+
+    if (!capabilitiesCache.has(sourceUrl)) {
+      const url = new URL(sourceUrl, window.location.origin)
+      url.search = ''
+      url.searchParams.set('service', 'WMS')
+      url.searchParams.set('request', 'GetCapabilities')
+      capabilitiesCache.set(sourceUrl, fetch(url).then(async (response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        return new DOMParser().parseFromString(await response.text(), 'text/xml')
+      }))
+    }
+
+    const capabilities = await capabilitiesCache.get(sourceUrl)
+    return getGeographicExtent(capabilities, layerName)
+  }
+
+  async function zoomToLayer(layer, button) {
+    button.disabled = true
+    button.title = 'Đang tải phạm vi lớp'
+    try {
+      const view = map.getView()
+      const geographicExtent = isBaseLayer(layer) ? null : await getWmsExtent(layer)
+      const extent = isBaseLayer(layer)
+        ? view.getProjection().getExtent()
+        : geographicExtent && transformExtent(geographicExtent, 'EPSG:4326', view.getProjection())
+      if (!extent) throw new Error('Không tìm thấy phạm vi lớp')
+      map.updateSize()
+      view.fit(extent, { padding: [0, 0, 0, 0], duration: 350 })
+      button.title = 'Xem tổng quan lớp'
+    } catch {
+      button.title = 'Không thể xác định phạm vi lớp'
+    } finally {
+      button.disabled = false
+    }
   }
 
   function saveState() {
@@ -147,9 +216,21 @@ export function createLayerCatalogTool({ map, baseGroup, thematicGroups, rasterG
     const title = document.createElement('span')
     title.className = 'toc-layer-title'
     title.textContent = layer.get('title') || layerId
-    row.append(checkbox, title)
+
+    const overviewButton = document.createElement('button')
+    overviewButton.type = 'button'
+    overviewButton.className = 'toc-layer-overview'
+    overviewButton.title = 'Xem tổng quan lớp'
+    overviewButton.setAttribute('aria-label', `Xem tổng quan ${layer.get('title') || layerId}`)
+    overviewButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.8"/></svg>'
+    overviewButton.addEventListener('click', (event) => {
+      event.stopPropagation()
+      zoomToLayer(layer, overviewButton)
+    })
+
+    row.append(checkbox, title, overviewButton)
     row.addEventListener('click', (event) => {
-      if (event.target === checkbox) return
+      if (event.target === checkbox || event.target.closest('.toc-layer-overview')) return
       selectedLayer = layer
       render()
     })
@@ -282,5 +363,9 @@ export function createLayerCatalogTool({ map, baseGroup, thematicGroups, rasterG
 
   applySavedState()
   render()
-  return { open: () => { render(); panel.classList.add('shown') }, close: () => panel.classList.remove('shown') }
+  return {
+    open: () => { render(); panel.classList.add('shown') },
+    close: () => panel.classList.remove('shown'),
+    refresh: render,
+  }
 }

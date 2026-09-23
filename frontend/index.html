@@ -4,37 +4,237 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101827" />
-    <title>PTN WebGIS</title>
+    <title>PTN</title>
   </head>
   <body>
-    <!-- HTML chỉ định nghĩa bố cục cơ bản của giao diện. -->
     <div class="app">
+      <!-- Header -->
       <header class="header">
         <a class="brand" href="#map"><b>PTN</b><span><strong>PTN WebGIS</strong><small>Hệ thống thực hành GIS</small></span></a>
+        <div class="map-readout" aria-live="polite">
+          <span>WGS84: Vĩ độ: <output id="latitude-value">—</output>, Kinh độ: <output id="longitude-value">—</output></span>
+          <span>VN2000: X = <output id="vn2000-x-value">—</output>, Y = <output id="vn2000-y-value">—</output></span>
+          <div class="map-scale-row">
+            <span>Tỉ lệ: 1:<output id="map-scale-value">—</output></span>
+            <div class="projection-zone" aria-label="Múi chiếu tọa độ">
+              <span>Múi chiếu:</span>
+              <label title="Phù hợp bản đồ tỷ lệ lớn, giảm biến dạng trong phạm vi hẹp."><input type="radio" name="projection-zone" value="3"> 3°</label>
+              <label title="Phù hợp bản đồ tỷ lệ nhỏ và phạm vi rộng."><input type="radio" name="projection-zone" value="6" checked> 6°</label>
+            </div>
+          </div>
+        </div>
         <div class="header-actions">
-          <button data-action="guide">Hướng dẫn</button>
-          <button class="user" data-action="account"><i>HV</i><span><strong>Học viên</strong><small>Chưa đăng nhập</small></span></button>
+          <button class="support-header-button" data-action="guide">
+            <span>?</span><span>Hỗ trợ</span>
+          </button>
+          <div class="account-control">
+            <button class="account-avatar" data-account-toggle aria-label="Mở menu tài khoản" aria-expanded="false">
+              <span data-avatar-label>?</span>
+              <img class="account-avatar-image" data-avatar-image alt="Ảnh đại diện" hidden>
+            </button>
+            <section class="account-popup" data-account-popup hidden aria-label="Tài khoản">
+              <div class="account-popup-head">
+                <span class="account-popup-icon" data-popup-avatar>?</span>
+                <img class="account-popup-image" data-popup-image alt="Ảnh đại diện" hidden>
+                <div><strong data-account-title>Khách</strong><small data-account-role>Chưa đăng nhập</small></div>
+              </div>
+              <div data-account-menu="guest">
+                <button data-account-action="login"><span>↪</span>Đăng nhập</button>
+                <button data-account-action="register"><span>＋</span>Đăng ký tài khoản</button>
+                <button data-account-action="forgot"><span>?</span>Quên mật khẩu</button>
+              </div>
+              <div data-account-menu="student" hidden>
+                <button data-account-action="profile"><span>◉</span>Thông tin cá nhân</button>
+                <button data-account-action="change-password"><span>⌘</span>Đổi mật khẩu</button>
+                <button data-account-action="logout"><span>↩</span>Đăng xuất</button>
+              </div>
+              <div data-account-menu="admin" hidden>
+                <button data-account-action="profile"><span>◉</span>Thông tin cá nhân</button>
+                <button data-account-action="change-password"><span>⌘</span>Đổi mật khẩu</button>
+                <button data-account-action="admin"><span>⚙</span>Quản trị hệ thống</button>
+                <button data-account-action="logout"><span>↩</span>Đăng xuất</button>
+              </div>
+            </section>
+          </div>
         </div>
       </header>
 
+      <!-- Bản đồ chính -->
       <main class="map-layout">
-        <!-- Menu chức năng ở bên trái. -->
+        <!-- Menu bên trái. -->
         <aside class="right-menu">
-          <p>CHỨC NĂNG</p>
-          <nav>
-            <button class="active" data-section="map">⌖ <span>Không gian bản đồ</span></button>
-            <button data-section="data">▣ <span>Quản trị dữ liệu không gian</span></button>
-            <button data-section="vector">◇ <span>Hiển thị vector</span></button>
-            <button data-section="raster">▧ <span>Hiển thị raster</span></button>
-            <button data-section="settings">⚙ <span>Cấu hình và quản trị</span></button>
-            <button data-section="support">? <span>Hỗ trợ</span></button>
+          <nav class="sidebar-nav">
+            <!-- 1. QUẢN TRỊ DỮ LIỆU KHÔNG GIAN -->
+            <div class="menu-parent" data-menu-parent="data" data-admin-only>
+              <button type="button" class="menu-parent-button" aria-expanded="false">
+                <span class="menu-icon">▣</span>
+                <span class="menu-title">Quản trị dữ liệu không gian</span>
+                <span class="menu-arrow">⌄</span>
+              </button>
+
+              <div class="menu-children" hidden>
+                <button type="button" data-crud-action="add-vector">
+                  <span>＋</span><span>Thêm dữ liệu vector</span>
+                </button>
+
+                <button type="button" data-crud-action="edit-vector">
+                  <span>✎</span><span>Sửa dữ liệu vector</span>
+                </button>
+
+                <button type="button" data-crud-action="delete-vector">
+                  <span>×</span><span>Xóa dữ liệu vector</span>
+                </button>
+
+                <button type="button" data-crud-action="add-raster">
+                  <span>＋</span><span>Thêm dữ liệu raster</span>
+                </button>
+
+                <button type="button" data-crud-action="edit-raster">
+                  <span>✎</span><span>Sửa dữ liệu raster</span>
+                </button>
+
+                <button type="button" data-crud-action="delete-raster">
+                  <span>×</span><span>Xóa dữ liệu raster</span>
+                </button>
+
+                <button type="button" data-section="data-search">
+                  <span>⌕</span><span>Tìm kiếm thông tin</span>
+                </button>
+
+                <button type="button" data-section="data-view">
+                  <span>◉</span><span>Xem dữ liệu</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. HIỂN THỊ VECTOR -->
+            <div class="menu-parent" data-menu-parent="vector">
+              <button type="button" class="menu-parent-button" aria-expanded="false">
+                <span class="menu-icon">◇</span>
+                <span class="menu-title">Hiển thị dữ liệu vector</span>
+                <span class="menu-arrow">⌄</span>
+              </button>
+
+              <div class="menu-children" hidden>
+                <button type="button" data-section="vector-overview">
+                  <span>⌂</span><span>Xem overview</span>
+                </button>
+
+                <button type="button" data-section="vector-identify">
+                  <span>ⓘ</span><span>Xem nhanh thông tin</span>
+                </button>
+
+                <button type="button" data-section="vector-point">
+                  <span>•</span><span>Dữ liệu điểm</span>
+                </button>
+
+                <button type="button" data-section="vector-line">
+                  <span>╱</span><span>Dữ liệu đường</span>
+                </button>
+
+                <button type="button" data-section="vector-polygon">
+                  <span>▱</span><span>Dữ liệu vùng</span>
+                </button>
+
+                <button type="button" data-section="vector-thematic">
+                  <span>◈</span><span>Bản đồ chuyên đề</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 3. HIỂN THỊ RASTER -->
+            <div class="menu-parent" data-menu-parent="raster">
+              <button type="button" class="menu-parent-button" aria-expanded="false">
+                <span class="menu-icon">▧</span>
+                <span class="menu-title">Hiển thị dữ liệu raster</span>
+                <span class="menu-arrow">⌄</span>
+              </button>
+
+              <div class="menu-children" hidden>
+                <button type="button" data-section="raster-overview">
+                  <span>⌂</span><span>Xem overview</span>
+                </button>
+
+                <button type="button" data-section="raster-identify">
+                  <span>ⓘ</span><span>Xem nhanh thông tin</span>
+                </button>
+
+                <button type="button" data-section="raster-satellite">
+                  <span>◫</span><span>Ảnh vệ tinh</span>
+                </button>
+
+                <button type="button" data-section="raster-aerial">
+                  <span>▤</span><span>Ảnh hàng không</span>
+                </button>
+
+                <button type="button" data-section="raster-dem">
+                  <span>△</span><span>Dữ liệu DEM</span>
+                </button>
+
+                <button type="button" data-section="raster-thematic">
+                  <span>◈</span><span>Raster chuyên đề</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 4. CẤU HÌNH VÀ QUẢN TRỊ -->
+            <div class="menu-parent" data-menu-parent="settings" data-admin-only>
+              <button type="button" class="menu-parent-button" aria-expanded="false">
+                <span class="menu-icon">⚙</span>
+                <span class="menu-title">Cấu hình và quản trị</span>
+                <span class="menu-arrow">⌄</span>
+              </button>
+
+              <div class="menu-children" hidden>
+                <button type="button" data-section="system-config">
+                  <span>⚙</span><span>Cấu hình hệ thống</span>
+                </button>
+
+                <button type="button" data-section="style-point">
+                  <span>•</span><span>Cấu hình lớp điểm</span>
+                </button>
+
+                <button type="button" data-section="style-line">
+                  <span>╱</span><span>Cấu hình lớp đường</span>
+                </button>
+
+                <button type="button" data-section="style-polygon">
+                  <span>▱</span><span>Cấu hình lớp vùng</span>
+                </button>
+
+                <button type="button" data-section="style-thematic">
+                  <span>◈</span><span>Cấu hình lớp chuyên đề</span>
+                </button>
+
+                <button type="button" data-section="style-satellite">
+                  <span>◫</span><span>Cấu hình ảnh vệ tinh</span>
+                </button>
+
+                <button type="button" data-section="style-dem">
+                  <span>△</span><span>Cấu hình DEM</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- HỖ TRỢ -->
+            <button type="button" class="support-button" data-section="support">
+              <span class="menu-icon">?</span>
+              <span class="menu-title">Hỗ trợ</span>
+            </button>
+
           </nav>
-          <small><i></i>Bản đồ nền sẵn sàng</small>
+
+          <div class="sidebar-status">
+            <span class="status-dot"></span>
+            <div>
+              <strong>Hệ thống sẵn sàng</strong>
+            </div>
+          </div>
         </aside>
+
 
         <section class="map-panel">
           <div id="map" aria-label="Bản đồ nền OpenStreetMap"></div>
-          <div id="mouse-position" class="mouse-position"></div>
           <div id="tool-panels" aria-live="polite"></div>
         </section>
 
@@ -57,6 +257,7 @@
         <button data-action="close-message" aria-label="Đóng">×</button>
       </section>
     </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

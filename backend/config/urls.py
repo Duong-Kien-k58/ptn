@@ -1,10 +1,12 @@
-from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import include, path
 
 urlpatterns = [
-    # Trang quản trị có sẵn của Django.
-    path("admin/", admin.site.urls),
-
-    # Tất cả API của PTN bắt đầu bằng /api/.
+    path("api/auth/", include("accounts.urls")),
+    # Mọi URL bắt đầu bằng /api/ sẽ được chuyển sang file layers/urls.py xử lý
     path("api/", include("layers.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -7,18 +7,17 @@ backend/.venv/
 backend/__pycache__/
 backend/**/*.pyc
 backend/db.sqlite3
-backend/staticfiles/
 
 # JavaScript
 frontend/node_modules/
 frontend/dist/
 
-# Dữ liệu, sao lưu và tệp người dùng tải lên
-sample-data/private/
+# Dữ liệu sao lưu cục bộ
 database/backups/
-media/
 
 # Hệ điều hành và trình soạn thảo
 .vscode/
 .DS_Store
 Thumbs.db
+
+backend/media/

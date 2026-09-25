@@ -104,8 +104,7 @@ STATIC_URL = "/static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# GeoTIFF được chuyển tiếp tới GeoServer qua Django. Giới hạn view còn kiểm tra
-# riêng 512 MB trước khi gửi sang GeoServer.
+# Cho phép request GeoTIFF tối đa 512 MB; file lớn vẫn được Django ghi tạm ra đĩa.
 DATA_UPLOAD_MAX_MEMORY_SIZE = 512 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 

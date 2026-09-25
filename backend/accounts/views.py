@@ -8,13 +8,15 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.core.validators import validate_email
-from django.db import IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, connection, transaction
+from django.db.models import Q
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .models import UserProfile
+from .permissions import admin_required
 
 
 def read_json(request):
@@ -138,7 +140,7 @@ def profile(request):
 
 @require_POST
 def change_password(request):
-    profile, response = current_profile(request)
+    _, response = current_profile(request)
     if response:
         return response
     data = read_json(request) or {}
@@ -218,3 +220,79 @@ def login(request):
 def logout(request):
     auth_logout(request)
     return JsonResponse({"success": True, "message": "Đã đăng xuất."})
+
+
+def admin_user_data(profile):
+    user = profile.user
+    return {
+        "id": user.id,
+        "username": user.username,
+        "full_name": profile.full_name,
+        "email": user.email,
+        "student_code": profile.student_code or "",
+        "class_name": profile.class_name or "",
+        "role": profile.role,
+    }
+
+
+@admin_required
+def admin_overview(request):
+    if request.method != "GET":
+        return error("Chỉ hỗ trợ phương thức GET.", 405)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+        from layers.models import RasterMetadata
+
+        return JsonResponse({
+            "success": True,
+            "overview": {
+                "database_online": True,
+                "student_count": UserProfile.objects.filter(role=UserProfile.Role.STUDENT).count(),
+                "admin_count": UserProfile.objects.filter(role=UserProfile.Role.ADMIN).count(),
+                "raster_count": RasterMetadata.objects.count(),
+            },
+        })
+    except DatabaseError:
+        return error("Không thể kết nối cơ sở dữ liệu.", 503)
+
+
+@admin_required
+def admin_users(request):
+    if request.method != "GET":
+        return error("Chỉ hỗ trợ phương thức GET.", 405)
+    keyword = request.GET.get("q", "").strip()
+    role = request.GET.get("role", "").strip()
+    profiles = UserProfile.objects.select_related("user").order_by("full_name", "user__username")
+    if role:
+        if role not in UserProfile.Role.values:
+            return error("Vai trò lọc không hợp lệ.")
+        profiles = profiles.filter(role=role)
+    if keyword:
+        profiles = profiles.filter(
+            Q(full_name__icontains=keyword)
+            | Q(user__username__icontains=keyword)
+            | Q(user__email__icontains=keyword)
+            | Q(student_code__icontains=keyword)
+        )
+    return JsonResponse({"success": True, "users": [admin_user_data(profile) for profile in profiles[:100]]})
+
+
+@admin_required
+def update_user_role(request, user_id):
+    if request.method != "PUT":
+        return error("Chỉ hỗ trợ phương thức PUT.", 405)
+    data = read_json(request)
+    role = str(data.get("role", "")).strip() if data else ""
+    if role not in UserProfile.Role.values:
+        return error("Vai trò không hợp lệ.")
+    try:
+        profile = UserProfile.objects.select_related("user").get(user_id=user_id)
+    except UserProfile.DoesNotExist:
+        return error("Không tìm thấy người dùng.", 404)
+    if profile.user_id == request.user.id:
+        return error("Không thể tự thay đổi vai trò của chính mình.")
+    profile.role = role
+    profile.save(update_fields=["role", "updated_at"])
+    return JsonResponse({"success": True, "message": "Đã cập nhật vai trò.", "user": admin_user_data(profile)})

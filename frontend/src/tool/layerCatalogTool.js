@@ -55,6 +55,10 @@ export function createLayerCatalogTool({ map, baseGroup, thematicGroups, rasterG
   const defaultGroupOrder = getUiOrder(map.getLayers()).filter((layer) => movableGroups.includes(layer))
   const defaultLayers = new Map(allGroups.map((group) => [group, getUiOrder(group.getLayers())]))
   const defaultCollapsed = new Map(allGroups.map((group) => [group, Boolean(group.get('tocCollapsed'))]))
+  const defaultGroupVisibility = new Map(allGroups.map((group) => [group, group.getVisible()]))
+  const defaultLayerVisibility = new Map(
+    allGroups.flatMap((group) => group.getLayers().getArray().map((layer) => [layer, layer.getVisible()])),
+  )
   const defaultGroupByLayerId = new Map(
     movableGroups.flatMap((group) => getUiOrder(group.getLayers()).map((layer) => [layer.get('configId'), group])),
   )
@@ -133,8 +137,25 @@ export function createLayerCatalogTool({ map, baseGroup, thematicGroups, rasterG
         movableGroups.map((group) => [group.get('tocGroupId'), getUiOrder(group.getLayers()).map((layer) => layer.get('configId'))]),
       ),
       collapsed: Object.fromEntries(allGroups.map((group) => [group.get('tocGroupId'), Boolean(group.get('tocCollapsed'))])),
+      visibility: {
+        groups: Object.fromEntries(allGroups.map((group) => [group.get('tocGroupId'), group.getVisible()])),
+        layers: Object.fromEntries(allGroups.flatMap((group) => group.getLayers().getArray().map((layer) => [layer.get('configId'), layer.getVisible()]))),
+      },
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  }
+
+  function applyVisibility(state) {
+    const savedGroups = state.visibility?.groups || {}
+    const savedLayers = state.visibility?.layers || {}
+    allGroups.forEach((group) => {
+      const id = group.get('tocGroupId')
+      if (Object.hasOwn(savedGroups, id)) group.setVisible(Boolean(savedGroups[id]))
+      group.getLayers().forEach((layer) => {
+        const layerId = layer.get('configId')
+        if (Object.hasOwn(savedLayers, layerId)) layer.setVisible(Boolean(savedLayers[layerId]))
+      })
+    })
   }
 
   function applySavedState() {
@@ -167,6 +188,7 @@ export function createLayerCatalogTool({ map, baseGroup, thematicGroups, rasterG
 
     movableGroups.forEach((group) => setUiOrder(group.getLayers(), desiredByGroup.get(group)))
     allGroups.forEach((group) => group.set('tocCollapsed', Boolean(state.collapsed?.[group.get('tocGroupId')])))
+    applyVisibility(state)
   }
 
   function restoreDefaults() {
@@ -177,6 +199,8 @@ export function createLayerCatalogTool({ map, baseGroup, thematicGroups, rasterG
     allGroups.forEach((group) => {
       setUiOrder(group.getLayers(), defaultLayers.get(group))
       group.set('tocCollapsed', defaultCollapsed.get(group))
+      group.setVisible(defaultGroupVisibility.get(group))
+      group.getLayers().forEach((layer) => layer.setVisible(defaultLayerVisibility.get(layer)))
     })
     selectedLayer = null
     render()
@@ -367,5 +391,6 @@ export function createLayerCatalogTool({ map, baseGroup, thematicGroups, rasterG
     open: () => { render(); panel.classList.add('shown') },
     close: () => panel.classList.remove('shown'),
     refresh: render,
+    restoreVisibility: () => { applyVisibility(getSavedState()); render() },
   }
 }

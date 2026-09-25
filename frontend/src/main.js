@@ -6,7 +6,9 @@ import { createCrudManager } from './tool/crudManager.js'
 import { createDataSearchTool } from './tool/dataSearchTool.js'
 import { createDataTableTool } from './tool/dataTableTool.js'
 import { createRasterManager } from './tool/rasterManager.js'
+import { createLayerOverviewTool } from './tool/layerOverviewTool.js'
 import { createToolManager } from './tool/toolManager.js'
+import { createSystemTools } from './tool/systemTools.js'
 import { createAuthUi } from './auth.js'
 
 // Khởi tạo bản đồ trước, sau đó lần lượt gắn các công cụ phụ thuộc vào nó.
@@ -14,17 +16,20 @@ const { map, catalogLayers, vietnamCenter, defaultZoom } = createMap()
 createAuthUi()
 createBasicTools(map)
 const toolManager = createToolManager({ map, catalogLayers })
+const systemTools = createSystemTools()
+const layerOverview = createLayerOverviewTool({ map, ...catalogLayers })
 
 const crudManager = createCrudManager({ map })
 const dataTools = {
   'data-search': createDataSearchTool({ map }),
-  'data-view': createDataTableTool({ map, crudManager }),
+  'data-view': createDataTableTool({ map, crudManager, rasterGroup: catalogLayers.rasterGroup }),
 }
 const rasterManager = createRasterManager({
   map,
   rasterGroup: catalogLayers.rasterGroup,
-  onRasterChanged: () => toolManager.tools.layers.refresh(),
+  onRasterChanged: () => toolManager.tools.layers.restoreVisibility(),
 })
+rasterManager.load()
 
 // Mọi chức năng chỉ được hoạt động riêng lẻ. Các công cụ phát sự kiện này
 // trước khi mở để đóng panel và tương tác còn lại trên bản đồ.
@@ -80,6 +85,7 @@ document.addEventListener('ptn-account-action', (event) => {
     'change-password': 'Đổi mật khẩu', admin: 'Quản trị hệ thống', logout: 'Đăng xuất',
   }
   if (event.detail.action === 'error') return showMessage('Tài khoản', event.detail.message)
+  if (event.detail.action === 'admin') return systemTools.openAdmin()
   showMessage(labels[event.detail.action], 'Chức năng này sẽ được bổ sung theo luồng yêu cầu tiếp theo.')
 })
 
@@ -87,6 +93,17 @@ document.querySelectorAll('[data-section]').forEach((button) => {
   button.addEventListener('click', () => {
     const sectionName = button.dataset.section
     const selectedTool = dataTools[sectionName]
+
+    if (sectionName === 'vector-overview' || sectionName === 'raster-overview') {
+      layerOverview.open(sectionName.startsWith('vector') ? 'vector' : 'raster')
+      return
+    }
+
+    if (sectionName === 'support') {
+      systemTools.openSupport()
+      button.classList.add('active', 'opened')
+      return
+    }
 
     if (!selectedTool) {
       if (sectionName !== 'map') {
@@ -161,7 +178,7 @@ function handleMapAction(actionName) {
   } else if (actionName === 'fullscreen') {
     document.querySelector('.map-panel').requestFullscreen?.()
   } else if (actionName === 'guide') {
-    showMessage('Hướng dẫn', 'Kéo bản đồ để di chuyển và dùng chuột cuộn để phóng to hoặc thu nhỏ.')
+    systemTools.openSupport()
   } else if (actionName === 'close-message') {
     document.querySelector('.message').classList.remove('show')
   }

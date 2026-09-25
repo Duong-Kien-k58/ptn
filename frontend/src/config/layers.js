@@ -12,19 +12,19 @@ export const GEOSERVER_CONFIG = {
 }
 
 export const LAYER_GROUP_CONFIGS = [
-  { id: 'DuLieuNen', title: 'Dữ liệu nền', kind: 'vector' },
+  { id: 'DuLieuNen', title: 'Dữ liệu nền', kind: 'vector', fold: 'close'},
   // 7 chủ đề dữ liệu địa lí
-  { id: 'CoSoDoDac', title: 'Cơ sở đo đạc', kind: 'vector' },
-  { id: 'ThuyVan', title: 'Thủy văn', kind: 'vector' },
-  { id: 'DanCu', title: 'Dân cư', kind: 'vector' },
-  { id: 'GiaoThong', title: 'Giao thông', kind: 'vector' },
-  { id: 'BienGioiDiaGioi', title: 'Địa giới hành chính', kind: 'vector' },
-  { id: 'DiaHinh', title: 'Địa hình', kind: 'vector' },
-  { id: 'PhuBeMat', title: 'Phủ bề mặt', kind: 'vector'},
+  { id: 'CoSoDoDac', title: 'Cơ sở đo đạc', kind: 'vector',fold: 'close' },
+  { id: 'ThuyVan', title: 'Thủy văn', kind: 'vector',fold: 'close' },
+  { id: 'DanCu', title: 'Dân cư', kind: 'vector',fold: 'close' },
+  { id: 'GiaoThong', title: 'Giao thông', kind: 'vector',fold: 'close' },
+  { id: 'BienGioiDiaGioi', title: 'Địa giới hành chính', kind: 'vector',fold: 'close' },
+  { id: 'DiaHinh', title: 'Địa hình', kind: 'vector',fold: 'close' },
+  { id: 'PhuBeMat', title: 'Phủ bề mặt', kind: 'vector',fold: 'close' },
 
   // Nhóm dữ liệu raster và bản đồ nền
-  { id: 'raster', title: 'Dữ liệu Raster', kind: 'raster' },
-  { id: 'base', title: 'Bản đồ nền địa lý', kind: 'base' },
+  { id: 'raster', title: 'Dữ liệu Raster', kind: 'raster', fold: 'close' },
+  { id: 'base', title: 'Bản đồ nền địa lý', kind: 'base', fold: 'close' },
 ]
 
 export const BASE_LAYER_CONFIGS = [
@@ -44,9 +44,11 @@ export const MAP_LAYER_CONFIGS = [
   { id: 'vn_xa', title: 'Ranh giới xã', group: 'BienGioiDiaGioi', type: 'Polygon', visible: true, editable: true, fields: [{ id: 'ma_xa', label: 'Mã xã' }, { id: 'ten_xa', label: 'Tên xã' }, { id: 'sap_nhap', label: 'Sáp nhập' }, { id: 'tru_so', label: 'Trụ sở' }, { id: 'loai', label: 'Loại' }, { id: 'ma_tinh', label: 'Mã tỉnh' }, { id: 'ten_tinh', label: 'Tên tỉnh' }] },
 ]
 
+// Raster lớn (từ 512 MB) hoặc raster có sẵn: publish thủ công trên GeoServer,
+// sau đó khai báo tên WMS tại đây để OpenLayers hiển thị.
 export const RASTER_LAYER_CONFIGS = [
-  { id: 'vn25k', title: 'Dữ liệu nền VN25K', layerName: 'fast_alpha', visible: false },
-  { id: 'dem_vietnam', title: 'DEM Việt Nam (SRTM 30 m)', layerName: 'SRTM_30_VN_UTM', visible: false },
+  { id: 'vn25k', name: 'fast_alpha', store_name: 'anh25k', title: 'Dữ liệu nền VN25K', visible: false },
+  { id: 'dem_vietnam', name: 'SRTM_30_VN_UTM', title: 'DEM Việt Nam (SRTM 30 m)', visible: false },
 ]
 
 function tagLayer(layer, configId, kind) {
@@ -78,33 +80,34 @@ function createWmsLayer(config) {
   }), config.id, 'vector') // Gắn ID và loại vector
 }
 
-function createRasterLayer(config) {
+export function createPublishedRasterLayer(raster) {
   const layer = new TileLayer({
-    title: config.title, // Tên raster
-    visible: config.visible, // Trạng thái hiển thị ban đầu
+    title: raster.title,
+    visible: Boolean(raster.visible),
     source: new TileWMS({
       url: GEOSERVER_CONFIG.wmsUrl, // URL GeoServer WMS
       params: {
-        LAYERS: `${GEOSERVER_CONFIG.workspace}:${config.layerName}`, // Tên raster thật trên GeoServer
+        LAYERS: `${GEOSERVER_CONFIG.workspace}:${raster.name}`,
         TILED: true
       },
       serverType: 'geoserver',
       transition: 0,
     }),
   })
-  layer.set('rasterName', config.layerName) // Lưu tên raster thật trên GeoServer
-  return tagLayer(layer, config.id, 'raster') // Gắn ID và loại raster
+  layer.set('rasterName', raster.name)
+  layer.set('rasterMetadata', raster)
+  return tagLayer(layer, `raster-${raster.name}`, 'raster')
 }
 // Tạo LayerGroup từ các khai báo phía trên. Khi có GeoServer, chỉ cần thay
 // source của từng lớp tại đây; mã giao diện và catalog không cần sửa.
 export function createMapLayers() {
   const baseLayers = Object.fromEntries(BASE_LAYER_CONFIGS.map(config => [config.id, createBaseLayer(config)])) // Tạo các lớp bản đồ nền
   const vectorLayers = Object.fromEntries(MAP_LAYER_CONFIGS.map(config => [config.id, createWmsLayer(config)])) // Tạo các lớp vector
-  const rasterLayers = Object.fromEntries(RASTER_LAYER_CONFIGS.map(config => [config.id, createRasterLayer(config)])) // Tạo các lớp raster
+  const configuredRasterLayers = RASTER_LAYER_CONFIGS.map(createPublishedRasterLayer)
 
   function getGroupLayers(group) {
     if (group.kind === 'base') return BASE_LAYER_CONFIGS.map(config => baseLayers[config.id]) // Lấy các lớp nền
-    if (group.kind === 'raster') return RASTER_LAYER_CONFIGS.map(config => rasterLayers[config.id]) // Lấy các lớp raster
+    if (group.kind === 'raster') return configuredRasterLayers
     return MAP_LAYER_CONFIGS.filter(config => config.group === group.id).map(config => vectorLayers[config.id]) // Lấy vector thuộc nhóm
   }
 

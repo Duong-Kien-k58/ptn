@@ -30,10 +30,15 @@ export function createPopupTool({ map }) {
     id: 'identify-panel',
     title: 'Tra cứu thông tin',
     content: `
+      <div class="data-type-tabs" role="group" aria-label="Loại dữ liệu">
+        <button type="button" class="active" data-popup-type="vector">Vector</button>
+        <button type="button" data-popup-type="raster">Raster</button>
+      </div>
       <label>Lớp dữ liệu<select data-popup-layer></select></label>
       <p class="tool-hint" data-popup-status>Chọn lớp rồi nhấp đối tượng trên bản đồ.</p>
     `,
   })
+  const typeButtons = [...panel.querySelectorAll('[data-popup-type]')]
   const layerSelect = panel.querySelector('[data-popup-layer]')
   const status = panel.querySelector('[data-popup-status]')
 
@@ -62,6 +67,7 @@ export function createPopupTool({ map }) {
 
   let active = false
   let requestId = 0
+  let dataType = 'vector'
 
   function getMapLayerEntries() {
     const entries = []
@@ -75,44 +81,51 @@ export function createPopupTool({ map }) {
     return entries
   }
 
-  function getVisibleConfigs() {
+  function getVisibleVectorItems() {
     const entries = getMapLayerEntries()
-    return MAP_LAYER_CONFIGS.filter((config) => entries.some(({ layer, isVisible }) => {
-      return isVisible && layer.get('configId') === config.id
-    }))
+    return MAP_LAYER_CONFIGS.map((config) => {
+      const entry = entries.find(({ layer, isVisible }) => isVisible && layer.get('configId') === config.id)
+      return entry && { id: config.id, title: config.title, kind: 'vector', config, layer: entry.layer }
+    }).filter(Boolean)
   }
 
-  function getLayerForConfig(config) {
-    return getMapLayerEntries().find(({ layer, isVisible }) => {
-      return isVisible && layer.get('configId') === config.id
-    })?.layer
+  function getVisibleRasterItems() {
+    return getMapLayerEntries().flatMap(({ layer, isVisible }) => {
+      const name = layer.get('rasterName')
+      if (!isVisible || !name) return []
+      return [{ id: name, title: layer.get('title') || name, kind: 'raster', layer }]
+    })
   }
 
-  function getCurrentConfig() {
-    return getVisibleConfigs().find((config) => config.id === layerSelect.value)
+  function getVisibleItems() {
+    return dataType === 'raster' ? getVisibleRasterItems() : getVisibleVectorItems()
+  }
+
+  function getCurrentItem() {
+    return getVisibleItems().find((item) => item.id === layerSelect.value)
   }
 
   function refreshLayerOptions() {
     const previous = layerSelect.value
-    const configs = getVisibleConfigs()
+    const items = getVisibleItems()
     layerSelect.replaceChildren()
-    if (!configs.length) {
+    if (!items.length) {
       const option = document.createElement('option')
       option.value = ''
-      option.textContent = 'Không có lớp đang hiển thị'
+      option.textContent = `Không có lớp ${dataType} đang bật`
       layerSelect.appendChild(option)
       layerSelect.disabled = true
       return
     }
 
-    configs.forEach((config) => {
+    items.forEach((item) => {
       const option = document.createElement('option')
-      option.value = config.id
-      option.textContent = config.title
+      option.value = item.id
+      option.textContent = item.title
       layerSelect.appendChild(option)
     })
     layerSelect.disabled = false
-    layerSelect.value = configs.some((config) => config.id === previous) ? previous : configs[0].id
+    layerSelect.value = items.some((item) => item.id === previous) ? previous : items[0].id
   }
 
   function clearPopup() {
@@ -134,6 +147,46 @@ export function createPopupTool({ map }) {
     popupContent.appendChild(row)
   }
 
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes)) return null
+    const units = ['B', 'KB', 'MB', 'GB']
+    const index = bytes ? Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1) : 0
+    return `${(bytes / 1024 ** index).toFixed(index ? 2 : 0)} ${units[index]}`
+  }
+
+  function getResolution(metadata) {
+    const { bbox, width, height } = metadata
+    if (!bbox || bbox.length !== 4 || !width || !height) return null
+    const [minX, minY, maxX, maxY] = bbox.map(Number)
+    const x = Math.abs(maxX - minX) / width
+    const y = Math.abs(maxY - minY) / height
+    const geographic = /EPSG:(4326|4258|4269)/i.test(metadata.crs || '')
+    if (!geographic) return `${x.toFixed(2)} × ${y.toFixed(2)} m/pixel`
+    const latitude = (minY + maxY) / 2 * Math.PI / 180
+    return `${(x * 111320 * Math.cos(latitude)).toFixed(2)} × ${(y * 110574).toFixed(2)} m/pixel`
+  }
+
+  function appendRasterMetadata(item) {
+    const metadata = item.layer.get('rasterMetadata') || {}
+    const technical = metadata.technical_metadata || {}
+    const rows = [
+      ['Tên file', metadata.source_filename],
+      ['CRS', metadata.crs],
+      ['Phạm vi', metadata.bbox?.length === 4 ? metadata.bbox.map((value) => Number(value).toFixed(3)).join(', ') : null],
+      ['Kích thước', metadata.width && metadata.height ? `${metadata.width} × ${metadata.height} px` : null],
+      ['Độ phân giải', getResolution(metadata)],
+      ['Số band', technical.band_count],
+      ['Bits / pixel', technical.bits_per_sample],
+      ['Kiểu dữ liệu', technical.data_type],
+      ['NoData', technical.no_data],
+      ['Dung lượng', formatBytes(technical.file_size_bytes)],
+      ['Cập nhật', metadata.updated_at ? new Date(metadata.updated_at).toLocaleString('vi-VN') : null],
+    ]
+    rows.forEach(([label, value]) => {
+      if (value !== null && value !== undefined && value !== '') appendRow(label, value)
+    })
+  }
+
   function showFeature(feature, config, coordinate) {
     highlightSource.clear()
     highlightSource.addFeature(feature.clone())
@@ -148,17 +201,29 @@ export function createPopupTool({ map }) {
     overlay.setPosition(coordinate)
   }
 
+  function showRaster(properties, item, coordinate) {
+    highlightSource.clear()
+    popupContent.replaceChildren()
+    popupTitle.textContent = item.title
+    appendRow('Raster', item.id)
+    appendRasterMetadata(item)
+    Object.entries(properties).forEach(([name, value]) => appendRow(name, value))
+    const [longitude, latitude] = toLonLat(coordinate)
+    appendRow('Tọa độ', `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`)
+    popupElement.hidden = false
+    overlay.setPosition(coordinate)
+  }
+
   async function identify(event) {
-    const config = getCurrentConfig()
-    const wmsLayer = config && getLayerForConfig(config)
-    if (!config || !wmsLayer) {
+    const item = getCurrentItem()
+    if (!item) {
       refreshLayerOptions()
       clearPopup()
       status.textContent = 'Lớp đã tắt hoặc không còn hiển thị trên bản đồ.'
       return
     }
 
-    const url = wmsLayer.getSource()?.getFeatureInfoUrl(
+    const url = item.layer.getSource()?.getFeatureInfoUrl(
       event.coordinate,
       map.getView().getResolution(),
       map.getView().getProjection(),
@@ -171,25 +236,32 @@ export function createPopupTool({ map }) {
     }
 
     const currentRequest = ++requestId
-    status.textContent = `Đang tra cứu ${config.title}…`
+    status.textContent = `Đang tra cứu ${item.title}…`
     try {
       const response = await fetch(url)
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const data = await response.json()
       if (currentRequest !== requestId) return
 
-      const feature = geoJsonFormat.readFeatures(data, {
-        dataProjection: map.getView().getProjection(),
-        featureProjection: map.getView().getProjection(),
-      })[0]
-      if (!feature?.getGeometry()) {
-        clearPopup()
-        status.textContent = `Không tìm thấy đối tượng thuộc lớp ${config.title}.`
+      if (item.kind === 'raster') {
+        const properties = data.features?.[0]?.properties
+        if (!properties || !Object.keys(properties).length) throw new Error('Không có giá trị pixel tại vị trí này.')
+        showRaster(properties, item, event.coordinate)
+        status.textContent = `Đang xem giá trị pixel lớp ${item.title}.`
         return
       }
 
-      showFeature(feature, config, event.coordinate)
-      status.textContent = `Đang xem thông tin lớp ${config.title}.`
+      const feature = geoJsonFormat.readFeatures(data, {
+        dataProjection: map.getView().getProjection(), featureProjection: map.getView().getProjection(),
+      })[0]
+      if (!feature?.getGeometry()) {
+        clearPopup()
+        status.textContent = `Không tìm thấy đối tượng thuộc lớp ${item.title}.`
+        return
+      }
+
+      showFeature(feature, item.config, event.coordinate)
+      status.textContent = `Đang xem thông tin lớp ${item.title}.`
     } catch (error) {
       if (currentRequest !== requestId) return
       clearPopup()
@@ -211,9 +283,18 @@ export function createPopupTool({ map }) {
   map.on('singleclick', (event) => { if (active) identify(event) })
   getAllMapLayerNodes().forEach((layer) => layer.on('change:visible', () => {
     const selectedLayerId = layerSelect.value
-    const selectedLayerIsVisible = getVisibleConfigs().some((config) => config.id === selectedLayerId)
+    const selectedLayerIsVisible = getVisibleItems().some((item) => item.id === selectedLayerId)
     refreshLayerOptions()
     if (!selectedLayerIsVisible) clearPopup()
+  }))
+  typeButtons.forEach((button) => button.addEventListener('click', () => {
+    dataType = button.dataset.popupType
+    typeButtons.forEach((item) => item.classList.toggle('active', item === button))
+    refreshLayerOptions()
+    clearPopup()
+    status.textContent = dataType === 'raster'
+      ? 'Chọn raster đang bật rồi nhấp bản đồ để đọc giá trị pixel.'
+      : 'Chọn lớp rồi nhấp đối tượng trên bản đồ.'
   }))
   refreshLayerOptions()
 
